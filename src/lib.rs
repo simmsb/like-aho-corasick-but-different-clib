@@ -57,6 +57,7 @@ pub extern "C" fn search_searcher(
         length: found.len(),
     };
     std::mem::forget(found);
+    std::mem::forget(searcher);
     result
 }
 
