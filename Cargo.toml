@@ -16,3 +16,6 @@ panic = "abort"
 
 [dependencies]
 like-aho-corasick-but-different = { git = "https://github.com/nitros12/like-aho-corasick-but-different", rev = "6a8ddfac8390069543b68440483527b647bcc983" }
+
+[build-dependencies]
+cbindgen = "0.8.7"

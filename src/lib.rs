@@ -23,7 +23,6 @@ pub struct SearchResult {
     length: usize,
 }
 
-#[no_mangle]
 pub extern "C" fn new_searcher(
     search_strings: *const SearchElement,
     num_strings: usize,
@@ -41,7 +40,6 @@ pub extern "C" fn new_searcher(
     Box::into_raw(searcher) as *const Searcher
 }
 
-#[no_mangle]
 pub extern "C" fn search_searcher(
     searcher: *const Searcher,
     haystack: *const c_char,
@@ -61,13 +59,11 @@ pub extern "C" fn search_searcher(
     result
 }
 
-#[no_mangle]
 pub extern "C" fn deallocate_result(result: SearchResult) {
     let results = unsafe { std::slice::from_raw_parts(result.values, result.length) };
     drop(results);
 }
 
-#[no_mangle]
 pub extern "C" fn deallocate_searcher(searcher: *mut Searcher) {
     let searcher = unsafe { Box::from_raw(searcher as *mut SimpleFinder<*const c_void>) };
     drop(searcher);
