@@ -1,5 +1,3 @@
-#![feature(box_syntax)]
-
 use std::boxed::Box;
 use std::ffi::CStr;
 use std::os::raw::{c_char, c_void};
@@ -37,7 +35,7 @@ pub extern "C" fn new_searcher(
         })
         .collect();
 
-    let searcher = box SimpleFinder::new(search_strings);
+    let searcher = Box::new(SimpleFinder::new(search_strings));
     Box::into_raw(searcher) as *const Searcher
 }
 
