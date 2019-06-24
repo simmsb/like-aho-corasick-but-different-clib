@@ -1,6 +1,6 @@
 [package]
 name = "like-aho-corasick-but-different-clib"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Ben Simms <ben@bensimms.moe>"]
 edition = "2018"
 
@@ -15,4 +15,4 @@ lto = true
 panic = "abort"
 
 [dependencies]
-like-aho-corasick-but-different = { git = "https://github.com/nitros12/like-aho-corasick-but-different", rev = "6a8ddfac8390069543b68440483527b647bcc983" }
+like-aho-corasick-but-different = { git = "https://github.com/nitros12/like-aho-corasick-but-different"}
