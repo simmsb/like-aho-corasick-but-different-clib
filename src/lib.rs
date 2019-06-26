@@ -1,5 +1,6 @@
 use std::boxed::Box;
 use std::ffi::CStr;
+use std::mem::ManuallyDrop;
 use std::os::raw::{c_char, c_void};
 
 use like_aho_corasick_but_different::SimpleFinder;
@@ -7,6 +8,15 @@ use like_aho_corasick_but_different::SimpleFinder;
 #[repr(C)]
 pub struct Searcher {
     _private: [u8; 0],
+}
+
+impl Searcher {
+    unsafe fn from_raw<'a>(
+        searcher: *const Self,
+    ) -> ManuallyDrop<Box<SimpleFinder<'a, *const c_void>>> {
+        let searcher = Box::from_raw(searcher as *mut SimpleFinder<*const c_void>);
+        ManuallyDrop::new(searcher)
+    }
 }
 
 #[repr(C)]
@@ -28,7 +38,7 @@ pub extern "C" fn new_searcher(
 ) -> *const Searcher {
     let s = unsafe { std::slice::from_raw_parts(search_strings, num_strings) };
     let search_strings: Vec<_> = s
-        .into_iter()
+        .iter()
         .filter_map(|s| {
             let cstr = unsafe { CStr::from_ptr(s.key) };
             Some((cstr.to_str().ok()?, s.val))
@@ -40,11 +50,23 @@ pub extern "C" fn new_searcher(
 }
 
 #[no_mangle]
+pub extern "C" fn searcher_size(searcher: *const Searcher) -> usize {
+    let searcher = unsafe { Searcher::from_raw(searcher) };
+    searcher.heap_bytes()
+}
+
+#[no_mangle]
+pub extern "C" fn searcher_pattern_count(searcher: *const Searcher) -> usize {
+    let searcher = unsafe { Searcher::from_raw(searcher) };
+    searcher.pattern_count()
+}
+
+#[no_mangle]
 pub extern "C" fn search_searcher(
     searcher: *const Searcher,
     haystack: *const c_char,
 ) -> SearchResult {
-    let searcher = unsafe { Box::from_raw(searcher as *mut SimpleFinder<*const c_void>) };
+    let searcher = unsafe { Searcher::from_raw(searcher) };
     let haystack = unsafe { CStr::from_ptr(haystack).to_str().unwrap() };
 
     let found: Vec<_> = searcher.find_all_unique(haystack).into_iter().collect();
@@ -55,18 +77,23 @@ pub extern "C" fn search_searcher(
         length: found.len(),
     };
     std::mem::forget(found);
-    std::mem::forget(searcher);
     result
 }
 
 #[no_mangle]
 pub extern "C" fn deallocate_result(result: SearchResult) {
-    let results = unsafe { std::slice::from_raw_parts(result.values, result.length) };
-    drop(results);
+    let results = unsafe {
+        Vec::from_raw_parts(
+            result.values as *mut *const c_void,
+            result.length,
+            result.length,
+        )
+    };
+    drop(results)
 }
 
 #[no_mangle]
 pub extern "C" fn deallocate_searcher(searcher: *mut Searcher) {
-    let searcher = unsafe { Box::from_raw(searcher as *mut SimpleFinder<*const c_void>) };
-    drop(searcher);
+    let mut searcher = unsafe { Searcher::from_raw(searcher) };
+    unsafe { ManuallyDrop::drop(&mut searcher) };
 }
