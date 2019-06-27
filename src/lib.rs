@@ -11,9 +11,9 @@ pub struct Searcher {
 }
 
 impl Searcher {
-    unsafe fn from_raw<'a>(
+    unsafe fn from_raw(
         searcher: *const Self,
-    ) -> ManuallyDrop<Box<SimpleFinder<'a, *const c_void>>> {
+    ) -> ManuallyDrop<Box<SimpleFinder<*const c_void>>> {
         let searcher = Box::from_raw(searcher as *mut SimpleFinder<*const c_void>);
         ManuallyDrop::new(searcher)
     }
