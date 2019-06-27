@@ -15,4 +15,4 @@ lto = true
 panic = "abort"
 
 [dependencies]
-like-aho-corasick-but-different = { git = "https://github.com/nitros12/like-aho-corasick-but-different", tag="0.1.4"}
+like-aho-corasick-but-different = { git = "https://github.com/nitros12/like-aho-corasick-but-different", tag="0.1.4-owned"}
