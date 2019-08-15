@@ -11,9 +11,7 @@ pub struct Searcher {
 }
 
 impl Searcher {
-    unsafe fn from_raw(
-        searcher: *const Self,
-    ) -> ManuallyDrop<Box<SimpleFinder<*const c_void>>> {
+    unsafe fn from_raw(searcher: *const Self) -> ManuallyDrop<Box<SimpleFinder<*const c_void>>> {
         let searcher = Box::from_raw(searcher as *mut SimpleFinder<*const c_void>);
         ManuallyDrop::new(searcher)
     }
@@ -26,8 +24,21 @@ pub struct SearchElement {
 }
 
 #[repr(C)]
+pub struct ExtendedResultElement {
+    value: *const c_void,
+    start: usize,
+    end: usize,
+}
+
+#[repr(C)]
 pub struct SearchResult {
     values: *const *const c_void,
+    length: usize,
+}
+
+#[repr(C)]
+pub struct ExtendedSearchResult {
+    values: *const ExtendedResultElement,
     length: usize,
 }
 
@@ -81,10 +92,48 @@ pub extern "C" fn search_searcher(
 }
 
 #[no_mangle]
+pub extern "C" fn search_searcher_extended(
+    searcher: *const Searcher,
+    haystack: *const c_char,
+) -> ExtendedSearchResult {
+    let searcher = unsafe { Searcher::from_raw(searcher) };
+    let haystack = unsafe { CStr::from_ptr(haystack).to_str().unwrap() };
+
+    let found: Vec<_> = searcher
+        .find_all(haystack)
+        .map(|(match_, value)| ExtendedResultElement {
+            value: *value,
+            start: match_.start(),
+            end: match_.end(),
+        })
+        .collect();
+    let found = found.into_boxed_slice();
+
+    let result = ExtendedSearchResult {
+        values: found.as_ptr() as *const ExtendedResultElement,
+        length: found.len(),
+    };
+    std::mem::forget(found);
+    result
+}
+
+#[no_mangle]
 pub extern "C" fn deallocate_result(result: SearchResult) {
     let results = unsafe {
         Vec::from_raw_parts(
             result.values as *mut *const c_void,
+            result.length,
+            result.length,
+        )
+    };
+    drop(results)
+}
+
+#[no_mangle]
+pub extern "C" fn deallocate_extended_result(result: ExtendedSearchResult) {
+    let results = unsafe {
+        Vec::from_raw_parts(
+            result.values as *mut ExtendedResultElement,
             result.length,
             result.length,
         )
