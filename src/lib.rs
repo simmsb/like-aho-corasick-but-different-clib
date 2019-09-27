@@ -3,7 +3,7 @@ use std::ffi::CStr;
 use std::mem::ManuallyDrop;
 use std::os::raw::{c_char, c_void};
 
-use like_aho_corasick_but_different::SimpleFinder;
+use lacbd::SimpleFinder;
 
 #[repr(C)]
 pub struct Searcher {
